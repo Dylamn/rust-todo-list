@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::io;
+
 // 1. Add a task:
 //    Allow the user to add a task which has :
 //     - title
@@ -13,75 +16,113 @@
 fn main() {
     println!("Hello and welcome to To-do List!");
 
-    let mut tasks: Vec<[String; 3]> = vec![];
+    let mut tasks: HashMap<i32, (String, TaskStatus)> = HashMap::new();
+    let mut next_task_id = 1;
 
     loop {
-        match create_todo() {
-            Some(val) => {
-                tasks.push(val);
+        println!("1. Add a task");
+        println!("2. Display the list");
+        println!("3. Mark a task as done");
+        println!("4. Remove a task");
+        println!("5. Quit");
+
+        let mut choice = String::new();
+        io::stdin()
+            .read_line(&mut choice)
+            .expect("Failed to read user input");
+
+        match choice.trim() {
+            "1" => {
+                let mut description = String::new();
+                println!("Please enter a description for the task:");
+                io::stdin().read_line(&mut description).expect("Failed to read user input");
+                let description = description.trim().to_string();
+                add_task(&mut tasks, description, &mut next_task_id);
+            },
+            "2" => {
+                list_tasks(&tasks);
+            },
+            "3" => {
+                println!("Please enter the task ID to mark as done:");
+                let mut id_str = String::new();
+                io::stdin().read_line(&mut id_str).expect("Failed to read user input");
+                if let Ok(task_id) = id_str.trim().parse::<i32>() {
+                    mark_task_as_done(&mut tasks, task_id);
+                } else {
+                    println!("Invalid task ID.");
+                }
+            },
+            "4" => {
+                println!("Please enter the task ID to remove:");
+                let mut id_str = String::new();
+                io::stdin().read_line(&mut id_str).expect("Failed to read user input");
+                if let Ok(task_id) = id_str.trim().parse::<i32>() {
+                    remove_task(&mut tasks, task_id);
+                }
             }
-            None => {
+            "5" => {
                 println!("Goodbye!");
-                // The user has written "exit".
                 break;
             }
+            _ => println!("Not a valid choice. Please try again."),
         }
-
-        println!("Here's your to-do list:");
-        for (index, todo) in tasks.iter().enumerate() {
-            // The '2' comes from the ": " printed after the index.
-            let offset = String::from(" ").repeat(index.to_string().len() + 2);
-            let task_num = index + 1;
-            let [title, desc, status] = todo;
-
-            println!("{}: {} ({})\n{offset}{}", task_num, title, status, desc);
-        }
-
-        let todo_complete_index = 0;
     }
 }
 
-fn mark_todo_as_completed() {
-
-}
-fn create_todo() -> Option<[String; 3]> {
-    let todo_title = match get_user_input("Please enter a name for your task ('quit' to exit):") {
-        Some(input) => input,
-        None => {
-            return None;
-        }
-    };
-
-    let todo_description =
-        match get_user_input("Please enter a description for your task ('quit' to exit):") {
-            Some(input) => input,
-            None => {
-                return None;
-            }
-        };
-
-    Some([todo_title, todo_description, String::from("Not done")])
+#[derive(Debug)]
+enum TaskStatus {
+    Complete,
+    Incomplete,
 }
 
-fn get_user_input(display_text: &str) -> Option<String> {
-    let mut user_input = String::new();
+trait Task {
+    fn description(&self) -> String;
+    fn status(&self) -> TaskStatus;
+}
 
-    loop {
-        println!("{}", display_text);
-
-        match std::io::stdin().read_line(&mut user_input) {
-            Ok(_) => {
-                user_input = user_input.trim().to_string();
-                break;
-            }
-            Err(_) => {
-                println!("Invalid input. Please try again.");
-            }
-        }
-    }
-    if user_input == "quit" || user_input == "exit" {
-        return None;
+impl Task for String {
+    fn description(&self) -> String {
+        self.clone()
     }
 
-    Some(user_input.trim().to_string())
+    fn status(&self) -> TaskStatus {
+        TaskStatus::Incomplete
+    }
+}
+
+fn add_task<T: Task>(tasks: &mut HashMap<i32, (T, TaskStatus)>, description: T, task_id: &mut i32) {
+    tasks.insert(*task_id, (description, TaskStatus::Incomplete));
+    println!("Task n°{} added.", *task_id);
+    println!("-----");
+    *task_id += 1;
+}
+
+fn list_tasks<T: Task>(tasks: &HashMap<i32, (T, TaskStatus)>) -> () {
+    if tasks.is_empty() {
+        println!("There are no tasks to display.");
+        return;
+    }
+
+    println!("List of tasks:");
+    for (id, (description, status)) in tasks {
+        println!("{}. {} ({:?})", id, description.description(), status);
+    }
+    println!("-----")
+}
+
+fn mark_task_as_done<T: Task>(tasks: &mut HashMap<i32, (T, TaskStatus)>, task_id: i32) {
+    if let Some((_, status)) = tasks.get_mut(&task_id) {
+        *status = TaskStatus::Complete;
+        println!("Task n° {} is done!", task_id);
+    } else {
+        println!("Invalid task id. Skipped...");
+    }
+}
+
+fn remove_task<T: Task>(tasks: &mut HashMap<i32, (T, TaskStatus)>, task_id: i32) {
+    if tasks.remove(&task_id).is_some() {
+        println!("Task n°{} has been removed!", task_id);
+    } else {
+        println!("Invalid task id. Skipping...");
+    }
 }

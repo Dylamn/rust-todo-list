@@ -26,36 +26,29 @@ fn main() {
         println!("4. Remove a task");
         println!("5. Quit");
 
-        let mut choice = String::new();
-        io::stdin()
-            .read_line(&mut choice)
-            .expect("Failed to read user input");
+        let choice = ask_user();
 
-        match choice.trim() {
+        match choice.as_str() {
             "1" => {
-                let mut description = String::new();
                 println!("Please enter a description for the task:");
-                io::stdin().read_line(&mut description).expect("Failed to read user input");
-                let description = description.trim().to_string();
+                let description = ask_user();
                 add_task(&mut tasks, description, &mut next_task_id);
-            },
+            }
             "2" => {
                 list_tasks(&tasks);
-            },
+            }
             "3" => {
                 println!("Please enter the task ID to mark as done:");
-                let mut id_str = String::new();
-                io::stdin().read_line(&mut id_str).expect("Failed to read user input");
+                let id_str = ask_user();
                 if let Ok(task_id) = id_str.trim().parse::<i32>() {
                     mark_task_as_done(&mut tasks, task_id);
                 } else {
                     println!("Invalid task ID.");
                 }
-            },
+            }
             "4" => {
                 println!("Please enter the task ID to remove:");
-                let mut id_str = String::new();
-                io::stdin().read_line(&mut id_str).expect("Failed to read user input");
+                let id_str = ask_user();
                 if let Ok(task_id) = id_str.trim().parse::<i32>() {
                     remove_task(&mut tasks, task_id);
                 }
@@ -124,5 +117,25 @@ fn remove_task<T: Task>(tasks: &mut HashMap<i32, (T, TaskStatus)>, task_id: i32)
         println!("Task n°{} has been removed!", task_id);
     } else {
         println!("Invalid task id. Skipping...");
+    }
+}
+
+fn ask_user() -> String {
+    loop {
+        let mut input = String::new();
+
+        if let Err(_) = io::stdin().read_line(&mut input) {
+            println!("There was an error reading input. Please try again.");
+            continue;
+        }
+
+        let trimmed = input.trim();
+
+        if trimmed.is_empty() {
+            println!("Looks like input is empty. Please try again.");
+            continue;
+        }
+
+        return trimmed.to_string();
     }
 }

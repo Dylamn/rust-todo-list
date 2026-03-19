@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use crate::task::Status;
 
@@ -6,6 +7,6 @@ pub struct Task {
     id: u64,
     description: String,
     status: Status,
-    // TODO: created_at
-    // TODO: completed_at
+    created_at: DateTime<Utc>,
+    completed_at: DateTime<Utc>
 }

@@ -1,12 +1,24 @@
+use crate::task::Status;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::task::Status;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Task {
-    id: u64,
-    description: String,
-    status: Status,
-    created_at: DateTime<Utc>,
-    completed_at: DateTime<Utc>
+    pub id: u32,
+    pub description: String,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
+}
+
+impl Task {
+    pub fn new(id: u32, description: String) -> Self {
+        Self {
+            id,
+            description,
+            status: Status::Pending,
+            created_at: Utc::now(),
+            completed_at: None,
+        }
+    }
 }

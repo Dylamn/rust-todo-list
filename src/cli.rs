@@ -25,11 +25,11 @@ pub enum Command {
     },
 
     Done {
-        id: u64,
+        id: u32,
     },
 
     Remove {
-        id: u64,
+        id: u32,
     },
 }
 

@@ -3,7 +3,6 @@ use crate::task::Task;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, ErrorKind};
 
-// TODO: define file path (configurable later)
 const FILE_PATH: &str = "tasks.json";
 
 pub fn load() -> Result<Vec<Task>, StorageError> {

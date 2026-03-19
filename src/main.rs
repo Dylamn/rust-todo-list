@@ -5,7 +5,7 @@ pub mod task;
 
 use anyhow::Result;
 use storage::{load, save};
-use task::TaskManager;
+use task::{Task, TaskManager};
 
 fn main() {
     if let Err(e) = run() {
@@ -24,7 +24,7 @@ fn run() -> Result<()> {
             println!("Task added:\t {:?}", task);
         }
         cli::Command::List { completed, pending } => {
-            let task_list = manager.list();
+            let task_list: Vec<&Task> = manager.list(completed, pending).collect();
 
             // TODO: Generate a pretty formatted list to display.
             if task_list.is_empty() {
@@ -43,7 +43,8 @@ fn run() -> Result<()> {
         }
     }
 
-    save(manager.list())?;
+    let tasks: Vec<Task> = manager.list(true, true).cloned().collect();
+    save(&tasks)?;
 
     Ok(())
 }

@@ -31,8 +31,20 @@ impl TaskManager {
         Ok(task)
     }
 
-    pub fn list(&self) -> &Vec<Task> {
-        &self.tasks
+    pub fn list(&self, completed: bool, pending: bool) -> impl Iterator<Item = &Task> {
+        self.tasks.iter().filter(move |t| {
+            if completed && pending {
+                // The user provided both, return all.
+                true
+            } else if completed {
+                t.completed_at.is_some()
+            } else if pending {
+                t.completed_at.is_none()
+            } else {
+                // The user doesn't provide any argument, return the complete list.
+                true
+            }
+        })
     }
 
     pub fn mark_done(&mut self, id: u32) -> Result<(), TaskError> {

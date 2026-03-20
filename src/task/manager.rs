@@ -8,13 +8,15 @@ pub struct TaskManager {
 }
 
 impl TaskManager {
-    pub fn new() -> Self {
-        Self {
-            // TODO: When implementing persistence,
-            //  the `next_id` should start after the higher value in the persisted elements.
-            next_id: 1,
-            tasks: Vec::new(),
-        }
+    pub fn new(tasks: Vec<Task>) -> Self {
+        let next_id = tasks
+            .iter()
+            .map(|t| t.id)
+            .max()
+            .map(|ident| ident + 1)
+            .unwrap_or(1u32);
+
+        Self { next_id, tasks }
     }
 
     pub fn add(&mut self, description: String) -> Result<Task, TaskError> {
@@ -57,7 +59,7 @@ impl TaskManager {
             .ok_or(TaskError::NotFound(id))?;
 
         self.tasks.remove(index);
-
+        println!("{:?}", self.tasks);
         Ok(())
     }
 }

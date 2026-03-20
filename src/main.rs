@@ -3,7 +3,8 @@ pub mod error;
 pub mod storage;
 pub mod task;
 
-use error::TaskError;
+use anyhow::Result;
+use storage::{load, save};
 use task::TaskManager;
 
 fn main() {
@@ -12,9 +13,10 @@ fn main() {
     }
 }
 
-fn run() -> Result<(), TaskError> {
+fn run() -> Result<()> {
     let args = cli::parse();
-    let mut manager = TaskManager::new();
+    let tasks = load()?;
+    let mut manager = TaskManager::new(tasks);
 
     match args.command {
         cli::Command::Add { description } => {
@@ -22,12 +24,13 @@ fn run() -> Result<(), TaskError> {
             println!("Task added:\t {:?}", task);
         }
         cli::Command::List { completed, pending } => {
-            let tasks = manager.list();
+            let task_list = manager.list();
 
-            if tasks.is_empty() {
+            // TODO: Generate a pretty formatted list to display.
+            if task_list.is_empty() {
                 println!("No tasks in the list.");
             } else {
-                println!("{:?}", tasks);
+                println!("{:?}", task_list);
             }
         }
         cli::Command::Done { id } => {
@@ -39,7 +42,8 @@ fn run() -> Result<(), TaskError> {
             println!("Task with ID {} has been removed.", id);
         }
     }
-    // TODO: Save tasks back to storage
+
+    save(manager.list())?;
 
     Ok(())
 }

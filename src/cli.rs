@@ -10,10 +10,12 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
+    /// Adk a task to the list
     Add {
         description: String,
     },
 
+    /// List all the tasks
     List {
         /// Show only completed tasks
         #[arg(long)]
@@ -24,10 +26,13 @@ pub enum Command {
         pending: bool,
     },
 
+    /// Mark a task as done
     Done {
         id: u32,
     },
 
+
+    /// Remove a task from the list
     Remove {
         id: u32,
     },

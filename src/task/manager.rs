@@ -1,0 +1,77 @@
+use super::Task;
+use crate::error::TaskError;
+use chrono::Utc;
+
+pub struct TaskManager {
+    next_id: u32,
+    tasks: Vec<Task>,
+}
+
+impl TaskManager {
+    pub fn new(tasks: Vec<Task>) -> Self {
+        let next_id = tasks
+            .iter()
+            .map(|t| t.id)
+            .max()
+            .map(|ident| ident + 1)
+            .unwrap_or(1u32);
+
+        Self { next_id, tasks }
+    }
+
+    pub fn add(&mut self, description: String) -> Result<Task, TaskError> {
+        if description.is_empty() {
+            return Err(TaskError::EmptyDescription);
+        }
+
+        let task = Task::new(self.next_id, description);
+        self.tasks.push(task.clone());
+        self.next_id += 1;
+
+        Ok(task)
+    }
+
+    pub fn list(&self, completed: bool, pending: bool) -> impl Iterator<Item = &Task> {
+        self.tasks.iter().filter(move |t| {
+            if completed && pending {
+                // The user provided both, return all.
+                true
+            } else if completed {
+                t.completed_at.is_some()
+            } else if pending {
+                t.completed_at.is_none()
+            } else {
+                // The user doesn't provide any argument, return the complete list.
+                true
+            }
+        })
+    }
+
+    pub fn mark_done(&mut self, id: u32) -> Result<(), TaskError> {
+        let task = self
+            .tasks
+            .iter_mut()
+            .find(|t| t.id == id)
+            .ok_or(TaskError::NotFound(id))?;
+
+        if task.completed_at.is_some() {
+            return Err(TaskError::AlreadyCompleted(id));
+        }
+
+        task.completed_at = Some(Utc::now());
+
+        Ok(())
+    }
+
+    pub fn remove(&mut self, id: u32) -> Result<(), TaskError> {
+        let index = self
+            .tasks
+            .iter()
+            .position(|t| t.id == id)
+            .ok_or(TaskError::NotFound(id))?;
+
+        self.tasks.remove(index);
+
+        Ok(())
+    }
+}

@@ -71,7 +71,7 @@ impl TaskManager {
             .ok_or(TaskError::NotFound(id))?;
 
         self.tasks.remove(index);
-        println!("{:?}", self.tasks);
+
         Ok(())
     }
 }

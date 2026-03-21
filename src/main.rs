@@ -24,13 +24,21 @@ fn run() -> Result<()> {
             println!("Task added:\t {:?}", task);
         }
         cli::Command::List { completed, pending } => {
-            let task_list: Vec<&Task> = manager.list(completed, pending).collect();
+            let task_list = manager.list(completed, pending).collect::<Vec<&Task>>();
 
             // TODO: Generate a pretty formatted list to display.
             if task_list.is_empty() {
                 println!("No tasks in the list.");
             } else {
-                println!("{:?}", task_list);
+                for task in task_list {
+                    let is_done: char = if task.completed_at.is_some() {
+                        'X'
+                    } else {
+                        ' '
+                    };
+
+                    println!("{}. {} ({})", task.id, task.description, is_done);
+                }
             }
         }
         cli::Command::Done { id } => {

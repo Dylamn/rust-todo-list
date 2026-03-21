@@ -75,3 +75,170 @@ impl TaskManager {
         Ok(())
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::task::Task;
+
+    fn create_manager() -> TaskManager {
+        TaskManager::new(vec![])
+    }
+
+    fn create_task(id: u32, description: &str, completed: bool) -> Task {
+        let mut task = Task::new(id, description.to_string());
+        if completed {
+            task.completed_at = Some(chrono::Utc::now());
+        }
+        task
+    }
+
+    // =========================
+    // ADD
+    // =========================
+
+    #[test]
+    fn should_add_task() {
+        let mut manager = create_manager();
+        let task_description = "Test task";
+
+        let result = manager.add(task_description.to_string());
+
+        assert!(result.is_ok());
+        assert_eq!(manager.tasks.len(), 1);
+
+        let task = manager.tasks.get(0).unwrap();
+        assert_eq!(task.description, task_description.to_string());
+    }
+
+    #[test]
+    fn should_increment_id_when_adding_tasks() {
+        let mut manager = create_manager();
+        let id1 = manager.next_id;
+        let t1 = manager.add("Task 1".to_string()).unwrap();
+        let id2 = manager.next_id;
+        let t2 = manager.add("Task 2".to_string()).unwrap();
+
+        assert_eq!(t1.id + 1, t2.id);
+        assert_eq!(id1, t1.id);
+        assert_eq!(id2, t2.id);
+    }
+
+    #[test]
+    fn should_fail_when_description_is_empty() {
+        let mut manager = create_manager();
+
+        let result = manager.add("".to_string());
+
+        assert!(matches!(result, Err(TaskError::EmptyDescription)));
+    }
+
+    // =========================
+    // LIST
+    // =========================
+
+    #[test]
+    fn should_list_all_tasks_when_no_filter() {
+        let tasks = vec![
+            create_task(1, "A", false),
+            create_task(2, "B", true),
+        ];
+
+        let manager = TaskManager::new(tasks);
+
+        let result: Vec<_> = manager.list(false, false).collect();
+
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn should_filter_completed_tasks() {
+        let tasks = vec![
+            create_task(1, "A", false),
+            create_task(2, "B", true),
+        ];
+
+        let manager = TaskManager::new(tasks);
+
+        let result: Vec<_> = manager.list(true, false).collect();
+
+        assert_eq!(result.len(), 1);
+        assert!(result[0].completed_at.is_some());
+    }
+
+    #[test]
+    fn should_filter_pending_tasks() {
+        let tasks = vec![
+            create_task(1, "A", false),
+            create_task(2, "B", true),
+        ];
+
+        let manager = TaskManager::new(tasks);
+
+        let result: Vec<_> = manager.list(false, true).collect();
+
+        assert_eq!(result.len(), 1);
+        assert!(result[0].completed_at.is_none());
+    }
+
+    // =========================
+    // MARK DONE
+    // =========================
+
+    #[test]
+    fn should_mark_task_as_done() {
+        let tasks = vec![create_task(1, "A", false)];
+        let mut manager = TaskManager::new(tasks);
+
+        let result = manager.mark_done(1);
+
+        assert!(result.is_ok());
+
+        let task = manager.tasks.iter().find(|t| t.id == 1).unwrap();
+        assert!(task.completed_at.is_some());
+    }
+
+    #[test]
+    fn should_fail_when_task_not_found() {
+        let mut manager = create_manager();
+
+        let result = manager.mark_done(42);
+
+        assert!(matches!(result, Err(TaskError::NotFound(42))));
+    }
+
+    #[test]
+    fn should_fail_if_task_already_completed() {
+        let tasks = vec![create_task(1, "A", true)];
+        let mut manager = TaskManager::new(tasks);
+
+        let result = manager.mark_done(1);
+
+        assert!(matches!(result, Err(TaskError::AlreadyCompleted(1))));
+    }
+
+    // =========================
+    // REMOVE
+    // =========================
+
+    #[test]
+    fn should_remove_task() {
+        let tasks = vec![create_task(1, "A", false)];
+        let mut manager = TaskManager::new(tasks);
+
+        let result = manager.remove(1);
+
+        assert!(result.is_ok());
+        assert!(manager.tasks.is_empty());
+    }
+
+    #[test]
+    fn should_fail_when_removing_unknown_task() {
+        let mut manager = create_manager();
+
+        let result = manager.remove(42);
+
+        assert!(matches!(result, Err(TaskError::NotFound(42))));
+    }
+}

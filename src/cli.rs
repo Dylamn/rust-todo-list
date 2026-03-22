@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -6,6 +7,10 @@ use clap::{Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
+
+    /// Path to a tasks file (JSON format)
+    #[arg(short, long)]
+    pub file: Option<PathBuf>
 }
 
 #[derive(Subcommand)]

@@ -2,9 +2,9 @@ mod cli;
 pub mod error;
 pub mod storage;
 pub mod task;
+pub mod config;
 
 use anyhow::Result;
-use storage::{load, save};
 use task::{Task, TaskManager};
 
 fn main() {
@@ -15,7 +15,9 @@ fn main() {
 
 fn run() -> Result<()> {
     let args = cli::parse();
-    let tasks = load()?;
+    let file_path = config::resolve_path(args.file);
+
+    let tasks = storage::load(&file_path)?;
     let mut manager = TaskManager::new(tasks);
 
     match args.command {
@@ -52,7 +54,7 @@ fn run() -> Result<()> {
     }
 
     let tasks: Vec<Task> = manager.list(true, true).cloned().collect();
-    save(&tasks)?;
+    storage::save(&tasks, &file_path)?;
 
     Ok(())
 }

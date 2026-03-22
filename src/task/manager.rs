@@ -89,7 +89,7 @@ mod tests {
     fn create_task(id: u32, description: &str, completed: bool) -> Task {
         let mut task = Task::new(id, description.to_string());
         if completed {
-            task.completed_at = Some(chrono::Utc::now());
+            task.completed_at = Some(Utc::now());
         }
         task
     }

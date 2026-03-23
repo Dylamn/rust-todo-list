@@ -1,6 +1,7 @@
 use super::Task;
 use crate::error::TaskError;
 use chrono::Utc;
+use log::debug;
 
 pub struct TaskManager {
     next_id: u32,
@@ -16,10 +17,13 @@ impl TaskManager {
             .map(|ident| ident + 1)
             .unwrap_or(1u32);
 
+        debug!("Next task ID: {next_id}");
+
         Self { next_id, tasks }
     }
 
     pub fn add(&mut self, description: String) -> Result<Task, TaskError> {
+        debug!("Adding new task...");
         if description.is_empty() {
             return Err(TaskError::EmptyDescription);
         }
@@ -27,6 +31,7 @@ impl TaskManager {
         let task = Task::new(self.next_id, description);
         self.tasks.push(task.clone());
         self.next_id += 1;
+        println!("Incrementing ID... next value: {}", self.next_id);
 
         Ok(task)
     }
@@ -48,6 +53,7 @@ impl TaskManager {
     }
 
     pub fn mark_done(&mut self, id: u32) -> Result<(), TaskError> {
+        debug!("Trying to mark task {id} as done.");
         let task = self
             .tasks
             .iter_mut()
@@ -59,6 +65,7 @@ impl TaskManager {
         }
 
         task.completed_at = Some(Utc::now());
+        debug!("Task {id} marked as done.");
 
         Ok(())
     }
@@ -71,6 +78,7 @@ impl TaskManager {
             .ok_or(TaskError::NotFound(id))?;
 
         self.tasks.remove(index);
+        debug!("Removed task {id} from the list.");
 
         Ok(())
     }

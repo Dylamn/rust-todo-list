@@ -1,6 +1,10 @@
 mod loader;
+pub mod logging;
 
+use log::debug;
 use std::path::PathBuf;
+
+const ENV_TASK_FILE: &str = "TASK_FILE";
 
 #[derive(Debug, Default)]
 pub struct Config {
@@ -13,7 +17,8 @@ pub struct Config {
 /// - Config file
 /// - Default location
 pub fn resolve_path(cli_path: Option<PathBuf>) -> PathBuf {
-    if let Ok(env_path) = std::env::var("TASK_FILE") {
+    if let Ok(env_path) = std::env::var(ENV_TASK_FILE) {
+        debug!("Environment variable `{}` found.", ENV_TASK_FILE);
         return PathBuf::from(env_path);
     }
 
@@ -36,4 +41,31 @@ fn default_storage_path() -> PathBuf {
     std::fs::create_dir_all(&path).ok();
     path.push("tasks.json");
     path
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn env_should_override_cli() {
+        unsafe {
+            std::env::set_var(ENV_TASK_FILE, "/env/path");
+        }
+
+        let result = resolve_path(Some("/cli/path".into()));
+
+        assert_eq!(result, PathBuf::from("/env/path"));
+
+        unsafe {
+            std::env::remove_var(ENV_TASK_FILE);
+        }
+    }
+
+    #[test]
+    fn cli_should_override_config() {
+        let result = resolve_path(Some("/cli/path".into()));
+
+        assert_eq!(result, PathBuf::from("/cli/path"));
+    }
 }

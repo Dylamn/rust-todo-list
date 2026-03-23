@@ -1,14 +1,19 @@
 use crate::error::StorageError;
 use crate::task::Task;
+use log::{debug, error, warn};
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, ErrorKind};
 use std::path::Path;
 
 pub fn load(path: &Path) -> Result<Vec<Task>, StorageError> {
+    debug!("Loading tasks from {:?}", path);
     let file = open_file(path)?;
     let reader = BufReader::new(file);
 
-    let tasks = serde_json::from_reader(reader).unwrap_or_else(|_| Vec::new());
+    let tasks = serde_json::from_reader(reader).unwrap_or_else(|e| {
+        debug!("Failed to parse JSON (defaulting to empty vec): {}", e);
+        Vec::new()
+    });
 
     Ok(tasks)
 }
@@ -23,8 +28,14 @@ fn open_file(path: &Path) -> Result<File, StorageError> {
 
     match open_result {
         Ok(file) => Ok(file),
-        Err(e) if e.kind() == ErrorKind::NotFound => create_file(path),
-        Err(_) => Err(StorageError::UnexpectedError),
+        Err(e) if e.kind() == ErrorKind::NotFound => {
+            warn!("File not found, creating new one");
+            create_file(path)
+        }
+        Err(e) => {
+            error!("Failed to open file: {e}");
+            Err(StorageError::UnexpectedError)
+        }
     }
 }
 
@@ -36,16 +47,23 @@ pub fn save(tasks: &Vec<Task>, path: &Path) -> Result<(), StorageError> {
         .create(true)
         .open(path)?;
 
-    serde_json::to_writer(storage_file, tasks).map_err(|_| StorageError::UnexpectedError)?;
-
-    Ok(())
+    match serde_json::to_writer(storage_file, tasks) {
+        Ok(_) => {
+            debug!("Tasks successfully saved.");
+            Ok(())
+        }
+        Err(e) => {
+            error!("Failed to save tasks: {e}");
+            Err(StorageError::UnexpectedError)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::fs;
+    use tempfile::tempdir;
 
     fn create_path() -> std::path::PathBuf {
         let dir = tempdir().unwrap();
@@ -75,10 +93,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path().join("tasks.json");
 
-        let tasks = vec![
-            create_task(1, "A"),
-            create_task(2, "B"),
-        ];
+        let tasks = vec![create_task(1, "A"), create_task(2, "B")];
 
         save(&tasks, &path).unwrap();
 

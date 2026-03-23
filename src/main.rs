@@ -1,10 +1,12 @@
 mod cli;
+pub mod config;
 pub mod error;
 pub mod storage;
 pub mod task;
-pub mod config;
 
 use anyhow::Result;
+use config::logging::resolve_log_level;
+use log::LevelFilter;
 use task::{Task, TaskManager};
 
 fn main() {
@@ -15,7 +17,12 @@ fn main() {
 
 fn run() -> Result<()> {
     let args = cli::parse();
+
+    let log_level = resolve_log_level(args.verbose, args.log_level.clone());
+    init_logger(log_level);
+
     let file_path = config::resolve_path(args.file);
+    log::debug!("Resolved path: {:?}", &file_path);
 
     let tasks = storage::load(&file_path)?;
     let mut manager = TaskManager::new(tasks);
@@ -28,7 +35,6 @@ fn run() -> Result<()> {
         cli::Command::List { completed, pending } => {
             let task_list = manager.list(completed, pending).collect::<Vec<&Task>>();
 
-            // TODO: Generate a pretty formatted list to display.
             if task_list.is_empty() {
                 println!("No tasks in the list.");
             } else {
@@ -57,4 +63,10 @@ fn run() -> Result<()> {
     storage::save(&tasks, &file_path)?;
 
     Ok(())
+}
+
+fn init_logger(level: LevelFilter) {
+    env_logger::Builder::new()
+        .filter(Some("task"), level)
+        .init()
 }

@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
+use toml::de::Error;
 
 #[derive(Debug, Deserialize)]
 pub struct FileConfig {
@@ -13,6 +14,7 @@ pub fn load_from_file() -> Option<FileConfig> {
     path.push("config.toml");
 
     let content = fs::read_to_string(path).ok()?;
+    let result: Result<FileConfig, Error> = toml::from_str(&content);
 
-    toml::from_str(&content).ok()
+    result.ok()
 }
